@@ -8,24 +8,30 @@ module.exports = function(fn) {
   var to   = path.join(process.cwd(), process.argv[3]);
 
   prompt.start();
-  
-  prompt.get([
-    {
-      description: "Enter the config password (" + path.basename(to) + "):\n",
-      name: "password",
-      type: "string",
-      hidden: true,
-      replace: "*",
-      required: true
-    }
-  ], function (err, result) {
+
+  var schema = {
+    description: "Enter the config password (" + path.basename(to) + "):\n",
+    name: "password",
+    type: "string",
+    hidden: true,
+    replace: "*",
+    required: false
+  };
+
+  var getSchema = [];
+
+  if (!process.env.CONFIG_LEAF_PASSWORD) {
+    getSchema.push(schema);
+  }
+
+  prompt.get(getSchema, function (err, result) {
     if (err) {
       console.log(err);
     } else {
       from = fs.createReadStream(from);
       to   = fs.createWriteStream(to);
-      fn   = fn("cast5-cbc", result.password);
-      
+      fn   = fn("cast5-cbc", result.password || process.env.CONFIG_LEAF_PASSWORD);
+
       from.pipe(fn).pipe(to);
       from.on("end", function () {
         console.log("done");
